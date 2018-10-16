@@ -1,0 +1,33 @@
+---
+dependencies: []
+
+galaxy_info:
+  role_name: docker
+  author: pytool
+  description: Docker for Linux.
+  company: "pytool.com, LLC"
+  license: "license (BSD, MIT)"
+  min_ansible_version: 2.4
+  platforms:
+    - name: EL
+      versions:
+        - 6
+        - 7
+    - name: Fedora
+      versions:
+        - all
+    - name: Debian
+      versions:
+        - jessie
+        - stretch
+    - name: Ubuntu
+      versions:
+        - trusty
+        - xenial
+        - bionic
+  galaxy_tags:
+    - system
+    - containers
+    - docker
+    - compose
+    - server
