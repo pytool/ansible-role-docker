@@ -1,0 +1,11 @@
+{
+  "registry-mirrors": ["{{ reg_mirror_1 }}", "{{ reg_mirror_2 }}"], 
+  "max-concurrent-downloads": 10,
+  "log-driver": "{{ log_driver }}",
+  "log-level": "{{ log_level }}",
+  "log-opts": {
+    "max-size": "{{ log_max_size }}",
+    "max-file": "{{ log_max_file }}"
+    },
+  "graph": "{{ storage_dir }}"
+}

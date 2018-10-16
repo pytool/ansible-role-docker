@@ -1,6 +1,4 @@
 ---
-dependencies: []
-
 galaxy_info:
   role_name: docker
   author: pytool
@@ -30,4 +28,3 @@ galaxy_info:
     - containers
     - docker
     - compose
-    - server
