@@ -1,22 +1,77 @@
-## ---------docker daemon配置部分-----------
-- name: 准备docker相关目录
+---
+
+- debug:
+    msg: "Always runs"
+  tags:
+    - always
+- debug:
+    msg: "Always runs"
+
+- include_tasks: docker-clean.yml
+  tags: [ 'never', 'clean' ]
+
+- include_tasks: docker-users.yml
+  when: docker_users
+
+- name: Create docker directory (used to store archives)
   file: name={{ item }} state=directory
   with_items:
-  - "{{ bin_dir }}"
-  - /etc/docker
+    - "/etc/docker/"
+    - "{{ docker_bin_dir }}"
+    - "{{ docker_data_dir }}"
+    - "{{ docker_download_dir }}"
+  tags:
+    - docker
 
-- name: 下载 docker 二进制文件
-  copy: src={{ base_dir }}/bin/{{ item }} dest={{ bin_dir }}/{{ item }} mode=0755
+# - name: Check docker packages file exists
+#   stat:
+#     path: "{{docker_download_dir}}/docker-${docker_version}.tgz"
+#   register: package
+
+# checksum 正确不在重新下载
+- name: Downloading official Docker binaries archive
+  get_url:
+    url: "{{docker_download_url}}"
+    dest: "{{ docker_download_dir }}/docker-{{docker_version}}.tgz"
+    checksum: "sha256:{{ docker_checksum_sha256.split(' ')|first }}"
+    mode: 0755
+    timeout: 42
+  run_once: true
+  delegate_to: localhost
+  tags:
+    - docker
+# creates 文件存在不在重复解压
+- name: unarchive downloaded Docker archive
+  become: yes
+  unarchive:
+    src: "{{ docker_download_dir }}/docker-{{docker_version}}.tgz"
+    dest: "{{ docker_download_dir }}"
+    creates: "{{ docker_download_dir }}/docker/docker"
+    # remote_src: yes
+  tags:
+    - docker
+
+- name: Copy Docker binaries to destination directory
+  become: true
+  copy:
+    src: "{{ docker_download_dir }}/docker/{{item}}"
+    dest: "{{docker_bin_dir}}/{{item}}"
+    mode: 0755
+    owner: root
+    group: root
+    # remote_src: yes
   with_items:
-  - docker-containerd
-  - docker-containerd-shim
-  - docker-init
-  - docker-runc
-  - docker
-  - docker-containerd-ctr
-  - dockerd
-  - docker-proxy
-  tags: upgrade_docker, download_docker
+    - docker
+    - dockerd
+    - docker-init
+    - docker-runc
+    - docker-proxy
+    - docker-containerd
+    - docker-containerd-ctr
+    - docker-containerd-shim
+  tags:
+    - docker
+
 
 - name: docker命令自动补全
   copy: src=docker dest=/etc/bash_completion.d/docker mode=0644
@@ -34,22 +89,19 @@
   template: src=docker.service.j2 dest=/etc/systemd/system/docker.service
   tags: upgrade_docker, download_docker
 
-- name: 开机 enable docker 服务
+- name: 开机启动 docker 服务
   shell: systemctl enable docker
   ignore_errors: true
 
-- name: 开启docker 服务
+- name: 启用 dockerd 服务
   shell: systemctl daemon-reload && systemctl restart docker
   tags: upgrade_docker
 
 ## 可选 ------安装docker查询镜像 tag的小工具----
-# 先要安装轻量JSON处理程序‘jq’，已在 prepare 节点安装
-- name: 下载 docker-tag
-  copy: src=docker-tag dest={{ bin_dir }}/docker-tag mode=0755
+# 需先安装轻量JSON处理程序‘jq’，已在 prepare 节点安装
+- name: 安装 docker-tag
+  copy: src=docker-tag dest={{ docker_bin_dir }}/docker-tag mode=0755
 
 
 - include_tasks: docker-compose.yml
-  when: docker_install_compose
-
-- include_tasks: docker-users.yml
-  when: docker_users
+  when: docker_compose_install

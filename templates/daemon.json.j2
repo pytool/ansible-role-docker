@@ -1,5 +1,5 @@
 {
-  "registry-mirrors": ["{{ reg_mirror_1 }}", "{{ reg_mirror_2 }}"], 
+  "registry-mirrors": ["{{ reg_mirror_1 }}", "{{ reg_mirror_2 }}", "{{ reg_mirror_3 }}"], 
   "max-concurrent-downloads": 10,
   "log-driver": "{{ log_driver }}",
   "log-level": "{{ log_level }}",
@@ -7,5 +7,5 @@
     "max-size": "{{ log_max_size }}",
     "max-file": "{{ log_max_file }}"
     },
-  "graph": "{{ storage_dir }}"
+  "graph": "{{ docker_data_dir }}"
 }

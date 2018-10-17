@@ -1,0 +1,4 @@
+tests/
+!tests/main.yml
+tests/inventory
+tests/clean.yml

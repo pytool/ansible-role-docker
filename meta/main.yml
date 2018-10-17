@@ -1,4 +1,6 @@
 ---
+dependencies: []
+
 galaxy_info:
   role_name: docker
   author: pytool

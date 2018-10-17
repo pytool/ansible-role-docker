@@ -1,0 +1,61 @@
+# 警告：此脚本将清理整个docker数据等
+# 请三思后运行此脚本 ansible-playbook clean.yml
+
+# 清理集群docker服务、网络相关
+- name: stop and disable docker service
+  service: 
+    name: docker
+    state: stopped
+    enabled: no
+  ignore_errors: true
+  tags: [ 'never', 'clean' ]
+
+- name: umount docker 挂载的目录
+  shell: "mount | grep '{{ docker_data_dir }}'| awk '{print $3}'|xargs umount"
+  ignore_errors: true
+  tags: [ 'never', 'clean' ]
+
+# 卸载 /var/run/docker/netns/default
+- name: 卸载docker 相关fs1
+  mount: path=/var/run/docker/netns/default state=unmounted
+  ignore_errors: true
+  tags: [ 'never', 'clean' ]
+
+- name: 卸载docker 相关fs2
+  mount: path={{ docker_data_dir }}/overlay state=unmounted
+  ignore_errors: true
+  tags: [ 'never', 'clean' ]
+
+- name: 清理docker安装文件  
+  ignore_errors: true
+  tags: [ 'never', 'clean' ]
+  file: name={{docker_bin_dir}}/{{item}} state=absent
+  with_items:
+    - docker-tag
+    - docker
+    - dockerd
+    - docker-init
+    - docker-runc
+    - docker-proxy
+    - docker-containerd
+    - docker-containerd-ctr
+    - docker-containerd-shim
+
+- name: 清理目录和文件
+  file: name={{ item }} state=absent
+  with_items:
+    - "/etc/docker/"
+    - "{{ docker_data_dir }}"
+    - "/var/run/docker/"
+    - "/etc/systemd/system/docker.service"
+    - "/etc/systemd/system/docker.service.requires/"
+    - "/etc/bash_completion.d/docker"
+  ignore_errors: true
+  tags: [ 'never', 'clean' ]
+
+- name: 清理 iptables
+  shell: "iptables -F && iptables -X \
+          && iptables -F -t nat && iptables -X -t nat \
+          && iptables -F -t raw && iptables -X -t raw \
+          && iptables -F -t mangle && iptables -X -t mangle"
+  tags: [ 'never', 'clean' ]

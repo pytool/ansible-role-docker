@@ -1,4 +1,0 @@
-localhost
-
-[all:vars]
-bin_dir="/usr/local/bin"

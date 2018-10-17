@@ -5,3 +5,22 @@
     groups: docker
     append: true
   with_items: "{{ docker_users }}"
+
+- name: Create docker group
+  group:
+    name: "{{docker_group}}"
+    gid: "{{docker_gid}}"
+    state: present
+  ignore_errors: true
+  tags:
+    - docker
+
+- name: Create docker user
+  user:
+    name: "{{docker_user}}"
+    uid: "{{docker_uid}}"
+    group: "{{docker_group}}"
+    shell: /usr/sbin/nologin
+  ignore_errors: true
+  tags:
+    - docker
