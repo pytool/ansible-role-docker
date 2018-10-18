@@ -4,17 +4,34 @@
   register: docker_compose_current_version
   changed_when: false
   failed_when: false
-
+  tags: compose
+  
 - name: Delete existing docker-compose version if it's different.
   file:
-    path: "{{ docker_base_dir }}"
+    path: "{{ docker_download_dir }}"
     state: absent
   when: >
     docker_compose_current_version.stdout is defined
     and docker_compose_version not in docker_compose_current_version.stdout
+  tags: compose
 
-- name: Install Docker Compose (if configured).
+- name: Download Docker-Compose {{ docker_compose_version }} (if configured).
   get_url:
-    url: https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-Linux-x86_64
-    dest: "{{ docker_base_dir }}"
+    url: "{{ docker_compose_url }}"
+    dest: "{{ docker_download_dir }}"
+    checksum: "sha256:{{ docker_compose_checksum_sha256.split(' ')|first }}"
     mode: 0755
+  run_once: true
+#   delegate_to: localhost
+  tags: [compose,down,download]
+
+- name: Copy Docker-Compose binaries to destination directory
+  become: true
+  copy:
+    src: "{{ docker_download_dir }}/docker-compose-Linux-x86_64"
+    dest: "{{docker_bin_dir}}/docker-compose"
+    mode: 0755
+    owner: root
+    group: root
+    # remote_src: yes
+  tags: compose

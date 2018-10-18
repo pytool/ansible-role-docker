@@ -1,0 +1,37 @@
+---
+- name: Check current docker-machine version.
+  command: docker-machine --version
+  register: docker_machine_current_version
+  changed_when: false
+  failed_when: false
+  tags: machine
+  
+- name: Delete existing docker-machine version if it's different.
+  file:
+    path: "{{ docker_download_dir }}"
+    state: absent
+  when: >
+    docker_machine_current_version.stdout is defined
+    and docker_machine_version not in docker_machine_current_version.stdout
+  tags: machine
+
+- name: Download Docker-machine {{ docker_machine_version }} (if configured).
+  get_url:
+    url: "{{ docker_machine_url }}"
+    dest: "{{ docker_download_dir }}"
+    # checksum: "sha256:{{ docker_machine_checksum_sha256.split(' ')|first }}"
+    mode: 0755
+  run_once: true
+  delegate_to: localhost
+  tags: [machine,down,download]
+
+- name: Copy Docker binaries to destination directory
+  become: true
+  copy:
+    src: "{{ docker_download_dir }}/docker-machine-Linux-x86_64"
+    dest: "{{docker_bin_dir}}/docker-machine"
+    mode: 0755
+    owner: root
+    group: root
+    # remote_src: yes
+  tags: machine

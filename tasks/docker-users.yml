@@ -1,11 +1,4 @@
 ---
-- name: Ensure docker users are added to the docker group.
-  user:
-    name: "{{ item }}"
-    groups: docker
-    append: true
-  with_items: "{{ docker_users }}"
-
 - name: Create docker group
   group:
     name: "{{docker_group}}"
@@ -21,6 +14,17 @@
     uid: "{{docker_uid}}"
     group: "{{docker_group}}"
     shell: /usr/sbin/nologin
+    comment: "Docker user"
+    system: yes
   ignore_errors: true
-  tags:
-    - docker
+  when:
+    - docker_user | bool
+  tags: docker
+
+- name:  Add {{docker_user}} user to docker group.
+  ignore_errors: true
+  user:
+    name: "{{ item }}"
+    groups: docker
+    append: true
+  with_items: "{{ docker_users }}"

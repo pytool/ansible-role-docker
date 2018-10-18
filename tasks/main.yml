@@ -1,12 +1,4 @@
 ---
-
-- debug:
-    msg: "Always runs"
-  tags:
-    - always
-- debug:
-    msg: "Always runs"
-
 - include_tasks: docker-clean.yml
   tags: [ 'never', 'clean' ]
 
@@ -20,16 +12,17 @@
     - "{{ docker_bin_dir }}"
     - "{{ docker_data_dir }}"
     - "{{ docker_download_dir }}"
-  tags:
-    - docker
+  tags: docker
 
 # - name: Check docker packages file exists
 #   stat:
 #     path: "{{docker_download_dir}}/docker-${docker_version}.tgz"
 #   register: package
 
-# checksum 正确不在重新下载
+# get_url checksum 正确不在重新下载
 - name: Downloading official Docker binaries archive
+  become: no
+  delegate_to: localhost
   get_url:
     url: "{{docker_download_url}}"
     dest: "{{ docker_download_dir }}/docker-{{docker_version}}.tgz"
@@ -37,19 +30,18 @@
     mode: 0755
     timeout: 42
   run_once: true
-  delegate_to: localhost
-  tags:
-    - docker
-# creates 文件存在不在重复解压
+  tags: [docker,down,download]
+
+# unarchive creates 文件存在不在重复解压
 - name: unarchive downloaded Docker archive
   become: yes
+  connection: local
   unarchive:
     src: "{{ docker_download_dir }}/docker-{{docker_version}}.tgz"
     dest: "{{ docker_download_dir }}"
     creates: "{{ docker_download_dir }}/docker/docker"
     # remote_src: yes
-  tags:
-    - docker
+  tags: docker
 
 - name: Copy Docker binaries to destination directory
   become: true
@@ -69,8 +61,7 @@
     - docker-containerd
     - docker-containerd-ctr
     - docker-containerd-shim
-  tags:
-    - docker
+  tags: docker
 
 
 - name: docker命令自动补全
@@ -87,7 +78,7 @@
 
 - name: 创建docker的systemd unit文件
   template: src=docker.service.j2 dest=/etc/systemd/system/docker.service
-  tags: upgrade_docker, download_docker
+  tags: upgrade,docker
 
 - name: 开机启动 docker 服务
   shell: systemctl enable docker
@@ -95,7 +86,7 @@
 
 - name: 启用 dockerd 服务
   shell: systemctl daemon-reload && systemctl restart docker
-  tags: upgrade_docker
+  tags: upgrade,docker
 
 ## 可选 ------安装docker查询镜像 tag的小工具----
 # 需先安装轻量JSON处理程序‘jq’，已在 prepare 节点安装
@@ -105,3 +96,8 @@
 
 - include_tasks: docker-compose.yml
   when: docker_compose_install
+  tags: [compose,download]
+
+- include_tasks: docker-machine.yml
+  when: docker_machine_install
+  tags: [machine,download]
